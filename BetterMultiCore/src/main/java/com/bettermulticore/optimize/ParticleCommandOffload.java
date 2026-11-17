@@ -1,4 +1,4 @@
-package com.bettersinglecore.optimize;
+package com.bettermulticore.optimize;
 
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.CommandDispatcher;
@@ -103,7 +103,7 @@ public final class ParticleCommandOffload {
             CommandDispatcher<CommandSourceStack> dispatcher = server.getCommands().getDispatcher();
             CommandNode<CommandSourceStack> particle = dispatcher.getRoot().getChild("particle");
             if (particle == null) {
-                log.warning("[BSC] particle command node not found; parallel particle disabled");
+                log.warning("[BMC] particle command node not found; parallel particle disabled");
                 return;
             }
             synchronized (originals) {
@@ -112,11 +112,11 @@ public final class ParticleCommandOffload {
                 walk(particle, false, false, false, false, false, false);
                 installed = true;
             }
-            log.info("[BSC] ParticleCommand parallel fan-out installed on "
+            log.info("[BMC] ParticleCommand parallel fan-out installed on "
                     + patchedNodes.get() + " leaf node(s), threshold="
                     + parallelThreshold + " viewers");
         } catch (Throwable t) {
-            log.warning("[BSC] Failed to install particle offload: " + t);
+            log.warning("[BMC] Failed to install particle offload: " + t);
             // Best-effort: put back anything we already overwrote.
             uninstall();
         }
@@ -135,7 +135,7 @@ public final class ParticleCommandOffload {
                     COMMAND_FIELD.set(e.getKey(), e.getValue());
                     restored++;
                 } catch (IllegalAccessException ex) {
-                    log.warning("[BSC] Cannot restore particle command node: " + ex);
+                    log.warning("[BMC] Cannot restore particle command node: " + ex);
                 }
             }
             originals.clear();
@@ -143,7 +143,7 @@ public final class ParticleCommandOffload {
             patchedNodes.set(0);
         }
         if (restored > 0) {
-            log.info("[BSC] ParticleCommand offload uninstalled; restored "
+            log.info("[BMC] ParticleCommand offload uninstalled; restored "
                     + restored + " vanilla leaf node(s)");
         }
     }
@@ -171,7 +171,7 @@ public final class ParticleCommandOffload {
                 COMMAND_FIELD.set(node, replacement);
                 patchedNodes.incrementAndGet();
             } catch (IllegalAccessException e) {
-                log.warning("[BSC] Cannot replace particle command node: " + e);
+                log.warning("[BMC] Cannot replace particle command node: " + e);
             }
         }
 
@@ -192,7 +192,7 @@ public final class ParticleCommandOffload {
     /** True if the Command instance was produced by this plugin (any classloader). */
     private static boolean isOursCommand(Command<?> cmd) {
         String n = cmd.getClass().getName();
-        return n.contains("ParticleCommandOffload") || n.contains("bettersinglecore");
+        return n.contains("ParticleCommandOffload") || n.contains("BetterMultiCore");
     }
 
     private Command<CommandSourceStack> createCommand(boolean hasPos, boolean hasDelta,

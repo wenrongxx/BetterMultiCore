@@ -1,7 +1,7 @@
-package com.bettersinglecore.optimize;
+package com.bettermulticore.optimize;
 
-import com.bettersinglecore.config.PluginConfig;
-import com.bettersinglecore.monitor.TickMonitor;
+import com.bettermulticore.config.PluginConfig;
+import com.bettermulticore.monitor.TickMonitor;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
@@ -125,7 +125,7 @@ public final class PathChunkWarmer {
 
             @Override
             public Thread newThread(Runnable r) {
-                Thread t = new Thread(r, "BSC-PathWarm-" + n.incrementAndGet());
+                Thread t = new Thread(r, "BMC-PathWarm-" + n.incrementAndGet());
                 t.setDaemon(true);
                 return t;
             }
@@ -184,7 +184,7 @@ public final class PathChunkWarmer {
                 break;
             }
             Location pl = player.getLocation();
-            // Single smaller AABB — avoid second full-radius world query when empty
+            // One smaller AABB — avoid second full-radius world query when empty
             // (old path did getNearbyEntities(48) then world.getNearbyEntities(48) again).
             java.util.Collection<Entity> nearby;
             try {

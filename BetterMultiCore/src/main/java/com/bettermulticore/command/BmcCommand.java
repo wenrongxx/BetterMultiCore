@@ -1,6 +1,6 @@
-package com.bettersinglecore.command;
+package com.bettermulticore.command;
 
-import com.bettersinglecore.BetterSingleCorePlugin;
+import com.bettermulticore.BetterMultiCorePlugin;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -10,17 +10,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-public final class BscCommand implements CommandExecutor, TabCompleter {
+public final class BmcCommand implements CommandExecutor, TabCompleter {
 
-    private final BetterSingleCorePlugin plugin;
+    private final BetterMultiCorePlugin plugin;
 
-    public BscCommand(BetterSingleCorePlugin plugin) {
+    public BmcCommand(BetterMultiCorePlugin plugin) {
         this.plugin = plugin;
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!sender.hasPermission("bettersinglecore.admin")) {
+        if (!sender.hasPermission("bettermulticore.admin")) {
             sender.sendMessage("§cNo permission.");
             return true;
         }
@@ -29,15 +29,15 @@ public final class BscCommand implements CommandExecutor, TabCompleter {
             case "status" -> sender.sendMessage(plugin.buildStatus());
             case "reload" -> {
                 plugin.reloadEverything();
-                sender.sendMessage("§a[BSC] Config reloaded. " + plugin.getConfigSummary());
+                sender.sendMessage("§a[BMC] Config reloaded. " + plugin.getConfigSummary());
             }
             case "enable" -> {
                 plugin.setUserEnabled(true);
-                sender.sendMessage("§a[BSC] Modules enabled.");
+                sender.sendMessage("§a[BMC] Modules enabled.");
             }
             case "disable" -> {
                 plugin.setUserEnabled(false);
-                sender.sendMessage("§e[BSC] Modules disabled.");
+                sender.sendMessage("§e[BMC] Modules disabled.");
             }
             case "workers" -> sender.sendMessage("§b[Workers] CPUs="
                     + Runtime.getRuntime().availableProcessors()
@@ -57,11 +57,11 @@ public final class BscCommand implements CommandExecutor, TabCompleter {
                         + " (spread, never pause)");
             }
             case "help" -> sender.sendMessage(String.join("\n",
-                    "§6/bsc status §7- full status",
-                    "§6/bsc reload §7- reload config.yml",
-                    "§6/bsc enable|disable §7- toggle modules",
-                    "§6/bsc workers|preload|pathwarm|monitor|particle|adaptive §7- stats"));
-            default -> sender.sendMessage("§cUnknown subcommand. Try /bsc help");
+                    "§6/bmc status §7- full status",
+                    "§6/bmc reload §7- reload config.yml",
+                    "§6/bmc enable|disable §7- toggle modules",
+                    "§6/bmc workers|preload|pathwarm|monitor|particle|adaptive §7- stats"));
+            default -> sender.sendMessage("§cUnknown subcommand. Try /bmc help");
         }
         return true;
     }

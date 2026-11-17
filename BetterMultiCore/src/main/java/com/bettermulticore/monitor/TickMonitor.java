@@ -1,6 +1,6 @@
-package com.bettersinglecore.monitor;
+package com.bettermulticore.monitor;
 
-import com.bettersinglecore.config.PluginConfig;
+import com.bettermulticore.config.PluginConfig;
 import com.destroystokyo.paper.event.server.ServerTickEndEvent;
 import com.destroystokyo.paper.event.server.ServerTickStartEvent;
 import org.bukkit.event.EventHandler;
@@ -101,7 +101,7 @@ public final class TickMonitor implements Listener {
                 if (!highLoad && highLoadStreak >= config.highLoadAfterTicks) {
                     highLoad = true;
                     log.info(String.format(Locale.ROOT,
-                            "[BSC] High-load SPREAD mode ON (MSPT %.1f >= %.1f) - shrink main-thread batches, keep workers running",
+                            "[BMC] High-load SPREAD mode ON (MSPT %.1f >= %.1f) - shrink main-thread batches, keep workers running",
                             mspt, config.highLoadMspt));
                 }
             } else if (mspt <= config.normalMspt) {
@@ -110,7 +110,7 @@ public final class TickMonitor implements Listener {
                 if (highLoad && normalStreak >= config.normalAfterTicks) {
                     highLoad = false;
                     log.info(String.format(Locale.ROOT,
-                            "[BSC] High-load SPREAD mode OFF (MSPT %.1f <= %.1f) - full main-thread batches",
+                            "[BMC] High-load SPREAD mode OFF (MSPT %.1f <= %.1f) - full main-thread batches",
                             mspt, config.normalMspt));
                 }
             } else {
@@ -147,7 +147,7 @@ public final class TickMonitor implements Listener {
                     ? String.format(Locale.ROOT, " pluginKick=%.3fms ops=%d", pluginMs, ops)
                     : "";
             log.info(String.format(Locale.ROOT,
-                    "[BSC] MSPT last=%.2f avg=%.2f max=%.2f highLoad=%s overloadedStreak=%d%s",
+                    "[BMC] MSPT last=%.2f avg=%.2f max=%.2f highLoad=%s overloadedStreak=%d%s",
                     lastMspt, avgMsptWindow, maxMsptWindow, highLoad, overloadedStreak, cost));
         }
     }

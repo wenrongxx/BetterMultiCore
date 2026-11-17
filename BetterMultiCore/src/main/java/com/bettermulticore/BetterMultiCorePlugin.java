@@ -1,11 +1,11 @@
-package com.bettersinglecore;
+package com.bettermulticore;
 
-import com.bettersinglecore.command.BscCommand;
-import com.bettersinglecore.config.PluginConfig;
-import com.bettersinglecore.monitor.TickMonitor;
-import com.bettersinglecore.optimize.ParallelChunkEngine;
-import com.bettersinglecore.optimize.ParticleCommandOffload;
-import com.bettersinglecore.optimize.PathChunkWarmer;
+import com.bettermulticore.command.BmcCommand;
+import com.bettermulticore.config.PluginConfig;
+import com.bettermulticore.monitor.TickMonitor;
+import com.bettermulticore.optimize.ParallelChunkEngine;
+import com.bettermulticore.optimize.ParticleCommandOffload;
+import com.bettermulticore.optimize.PathChunkWarmer;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -13,7 +13,7 @@ import java.util.Locale;
 import java.util.logging.Logger;
 
 /**
- * BetterSingleCore 1.6 — multi-core spread + parallel particle + lighter pathwarm.
+ * BetterMultiCore 1.0 — multi-core spread + parallel particle + lighter pathwarm.
  *
  * - Never pauses preload/pathwarm; high MSPT shrinks budgets / stretches scan interval.
  * - Pathwarm uses a smaller discovery AABB (scan-distance) — one query, no double full-radius scan.
@@ -22,7 +22,7 @@ import java.util.logging.Logger;
  * - Entity AI is never disabled.
  * - onDisable restores vanilla /particle (PlugMan / disablePlugin safe).
  */
-public final class BetterSingleCorePlugin extends JavaPlugin {
+public final class BetterMultiCorePlugin extends JavaPlugin {
 
     private PluginConfig config;
     private TickMonitor monitor;
@@ -50,9 +50,9 @@ public final class BetterSingleCorePlugin extends JavaPlugin {
 
         getServer().getPluginManager().registerEvents(monitor, this);
 
-        PluginCommand cmd = getCommand("bsc");
+        PluginCommand cmd = getCommand("bmc");
         if (cmd != null) {
-            BscCommand executor = new BscCommand(this);
+            BmcCommand executor = new BmcCommand(this);
             cmd.setExecutor(executor);
             cmd.setTabCompleter(executor);
         }
@@ -61,8 +61,8 @@ public final class BetterSingleCorePlugin extends JavaPlugin {
         particleOffload.installDelayed();
 
         if (config.logSummaryOnEnable) {
-            log.info("[BSC] BetterSingleCore 1.6 enabled - " + getConfigSummary());
-            log.info("[BSC] CPUs=" + Runtime.getRuntime().availableProcessors()
+            log.info("[BMC] BetterMultiCore 1.0 enabled - " + getConfigSummary());
+            log.info("[BMC] CPUs=" + Runtime.getRuntime().availableProcessors()
                     + " workers=" + config.effectiveWorkerThreads()
                     + " particleParallel=" + config.particleParallelEnabled
                     + " (execute stays on main thread)");
@@ -117,7 +117,7 @@ public final class BetterSingleCorePlugin extends JavaPlugin {
         if (particleWanted) {
             particleOffload.installDelayed();
         }
-        getLogger().info("[BSC] Reloaded: " + getConfigSummary());
+        getLogger().info("[BMC] Reloaded: " + getConfigSummary());
     }
 
     public void setUserEnabled(boolean enabled) {
@@ -131,7 +131,7 @@ public final class BetterSingleCorePlugin extends JavaPlugin {
 
     public String buildStatus() {
         StringBuilder sb = new StringBuilder();
-        sb.append("§6=== BetterSingleCore 1.6 (spread + particle + light pathwarm) ===\n");
+        sb.append("§6=== BetterMultiCore 1.0 (spread + particle + light pathwarm) ===\n");
         sb.append("§7Enabled: §f").append(userEnabled && config.enabled)
                 .append(" §7| HighLoad: §f").append(monitor.isHighLoad()).append('\n');
         sb.append("§7CPUs: §f").append(Runtime.getRuntime().availableProcessors())
@@ -171,7 +171,7 @@ public final class BetterSingleCorePlugin extends JavaPlugin {
     }
 
     public String metricsLine() {
-        return String.format(Locale.ROOT, "bsc enabled=%s cpus=%d highLoad=%s | %s | %s | %s | %s",
+        return String.format(Locale.ROOT, "bmc enabled=%s cpus=%d highLoad=%s | %s | %s | %s | %s",
                 userEnabled && config.enabled,
                 Runtime.getRuntime().availableProcessors(),
                 monitor.isHighLoad(),

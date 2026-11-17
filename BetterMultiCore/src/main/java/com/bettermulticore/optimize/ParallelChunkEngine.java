@@ -1,7 +1,7 @@
-package com.bettersinglecore.optimize;
+package com.bettermulticore.optimize;
 
-import com.bettersinglecore.config.PluginConfig;
-import com.bettersinglecore.monitor.TickMonitor;
+import com.bettermulticore.config.PluginConfig;
+import com.bettermulticore.monitor.TickMonitor;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -136,7 +136,7 @@ public final class ParallelChunkEngine {
         workers = Executors.newFixedThreadPool(threads, factory);
         loadPermits = new Semaphore(permits, true);
         log.info(String.format(Locale.ROOT,
-                "[BSC] Multi-core pool: %d workers, max concurrent chunk loads=%d (CPUs=%d)",
+                "[BMC] Multi-core pool: %d workers, max concurrent chunk loads=%d (CPUs=%d)",
                 threads, permits, Runtime.getRuntime().availableProcessors()));
     }
 
@@ -313,7 +313,7 @@ public final class ParallelChunkEngine {
             try {
                 r.run();
             } catch (Throwable t) {
-                log.warning("[BSC] kick failed: " + t);
+                log.warning("[BMC] kick failed: " + t);
             }
             drained++;
         }

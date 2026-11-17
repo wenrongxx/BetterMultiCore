@@ -1,4 +1,4 @@
-package com.bettersinglecore.optimize;
+package com.bettermulticore.optimize;
 
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
@@ -69,6 +69,6 @@ public final class Players {
         if (log == null || players == null || players.size() <= 4) {
             return; // avoid log spam on small pop; count is still in status lines
         }
-        log.info("[BSC] Players.all size=" + players.size());
+        log.info("[BMC] Players.all size=" + players.size());
     }
 }

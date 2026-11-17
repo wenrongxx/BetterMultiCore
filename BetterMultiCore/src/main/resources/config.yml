@@ -1,4 +1,4 @@
-# BetterSingleCore 1.6.x — 多核分摊 + particle 扇出 + 更轻 pathwarm 扫描（不改原版语义、不休眠 AI）
+# BetterMultiCore 1.0.x — 多核分摊 + particle 扇出 + 更轻 pathwarm 扫描（不改原版语义、不休眠 AI）
 # 高 MSPT 时缩小主线程批量并拉长 pathwarm 扫描间隔（绝不永久暂停）。
 # /particle 多观众发送并行到 worker；execute 世界逻辑仍在主线程。
 
@@ -8,7 +8,7 @@ multicore:
   enabled: true
   worker-threads: 0          # 0 = availableProcessors()
   max-concurrent-loads: 0    # 0 = workers * 8
-  thread-name-prefix: BSC-Worker
+  thread-name-prefix: BMC-Worker
 
 # ---------------------------------------------------------------------------
 # /particle 扇出并行：替换 Brigadier 叶子命令，参数/成功语义与原版一致

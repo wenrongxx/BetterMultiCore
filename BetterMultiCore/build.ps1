@@ -1,6 +1,6 @@
-# BetterSingleCore build (javac + jar, no Maven)
+# BetterMultiCore build (javac + jar, no Maven)
 param(
-    [string]$Version = "1.6.0"
+    [string]$Version = "1.0.0"
 )
 $ErrorActionPreference = "Stop"
 $root = $PSScriptRoot
@@ -14,7 +14,7 @@ $src = Join-Path $root "src\main\java"
 $res = Join-Path $root "src\main\resources"
 $out = Join-Path $root "out"
 $dist = Join-Path $root "dist"
-$jarPath = Join-Path $dist "BetterSingleCore-$Version.jar"
+$jarPath = Join-Path $dist "BetterMultiCore-$Version.jar"
 
 if (-not (Test-Path $api)) { throw "missing $api" }
 if (-not (Test-Path $serverJar)) { throw "missing $serverJar" }

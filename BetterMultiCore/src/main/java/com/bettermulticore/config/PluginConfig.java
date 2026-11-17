@@ -1,4 +1,4 @@
-package com.bettersinglecore.config;
+package com.bettermulticore.config;
 
 import org.bukkit.configuration.file.FileConfiguration;
 
@@ -62,7 +62,7 @@ public final class PluginConfig {
         this.multicoreEnabled = c.getBoolean("multicore.enabled", true);
         this.workerThreads = Math.max(0, c.getInt("multicore.worker-threads", 0));
         this.maxConcurrentLoads = Math.max(0, c.getInt("multicore.max-concurrent-loads", 0));
-        this.threadNamePrefix = c.getString("multicore.thread-name-prefix", "BSC-Worker");
+        this.threadNamePrefix = c.getString("multicore.thread-name-prefix", "BMC-Worker");
 
         this.particleParallelEnabled = c.getBoolean("particle-parallel.enabled", true);
         this.particleParallelViewersThreshold = Math.max(2,
