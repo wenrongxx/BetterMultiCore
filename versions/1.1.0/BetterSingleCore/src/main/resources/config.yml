@@ -1,0 +1,65 @@
+# BetterSingleCore 1.1.x — 多核并行（不休眠 AI）
+# 目标：把区块 IO / 预热等工作摊到其他 CPU 核心，主线程只做游戏逻辑。
+# 明确不做：实体 AI 休眠（会破坏刷怪塔）。
+
+enabled: true
+
+# ---------------------------------------------------------------------------
+# 多核工作池
+# ---------------------------------------------------------------------------
+multicore:
+  enabled: true
+  # 工作线程数；0 = 自动使用 Runtime.availableProcessors()
+  worker-threads: 0
+  # 全局同时进行的异步区块加载上限；0 = worker-threads * 8
+  max-concurrent-loads: 0
+  # 线程名前缀
+  thread-name-prefix: BSC-Worker
+
+# ---------------------------------------------------------------------------
+# 并行区块预热（异步 getChunkAtAsync，多 worker 同时 kick）
+# ---------------------------------------------------------------------------
+preload:
+  enabled: true
+  # 触发周期（tick）
+  interval-ticks: 20
+  # 每个玩家预热半径（chunk 距离）
+  radius-chunks: 2
+  # 每轮每个玩家最多发起的加载数
+  max-loads-per-player: 36
+  # 是否允许生成缺失区块（探索预热可 true；纯加载 false 更安全）
+  generate-if-missing: false
+  # 使用矩形批量 API getChunksAtAsync（更少调用开销）
+  use-batch-rect: true
+
+# ---------------------------------------------------------------------------
+# 路径邻域预热：保证生物寻路所需区块已在其他核心加载完成
+# （不改 AI，不 setAware/setAI，刷怪塔行为不变）
+# ---------------------------------------------------------------------------
+pathwarm:
+  enabled: true
+  interval-ticks: 40
+  # 只处理距玩家该距离内的生物
+  player-distance: 64
+  # 每个生物预热的区块半径
+  chunk-radius: 1
+  # 每轮最多处理的生物数
+  max-mobs-per-cycle: 80
+  # 跳过类型（通常不需要）
+  skip-types:
+    - PLAYER
+    - ARMOR_STAND
+    - ITEM
+    - EXPERIENCE_ORB
+
+# ---------------------------------------------------------------------------
+# MSPT 监控（只读，便于对比多核优化前后）
+# ---------------------------------------------------------------------------
+monitor:
+  enabled: true
+  report-interval-ticks: 1200
+  overloaded-mspt: 50.0
+  history-size: 120
+
+misc:
+  log-summary-on-enable: true

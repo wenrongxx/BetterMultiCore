@@ -1,0 +1,17 @@
+name: BetterSingleCore
+version: 1.2.0
+main: com.bettersinglecore.BetterSingleCorePlugin
+api-version: '1.21'
+description: Multi-core chunk warmup with adaptive yield for command-heavy datapacks (no AI dormancy).
+author: BetterSingleCore
+website: https://github.com/local/better-single-core
+commands:
+  bsc:
+    description: BetterSingleCore diagnostics and control
+    usage: /bsc <status|reload|enable|disable|workers|preload|pathwarm|monitor|adaptive>
+    permission: bettersinglecore.admin
+    aliases: [singlecore, sc]
+permissions:
+  bettersinglecore.admin:
+    description: Admin access to BetterSingleCore
+    default: op

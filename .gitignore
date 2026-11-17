@@ -1,0 +1,36 @@
+# --- Local test environment (not for GitHub) ---
+test_server/
+mc_clients/
+_datapack_inspect/
+_jar_inspect/
+bench_results/
+HotReloadHelper/
+
+# --- Large binaries / third-party ---
+*.zip
+leaves-*.jar
+bsc_disabled.jar
+*PlugMan*
+*.sparkprofile
+
+# --- Build intermediates ---
+BetterSingleCore/out/
+BetterSingleCore/javac_args.txt
+**/out/
+**/*.class
+
+# --- OS / editor ---
+Thumbs.db
+Desktop.ini
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# --- Logs / temp ---
+*.log
+logs/
+hotreload_result.txt
+HOTRELOAD_RESULT.txt
+run_out.txt
+run_err.txt

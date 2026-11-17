@@ -1,0 +1,93 @@
+# BetterSingleCore — 降低 Minecraft 主线程（单核）负载
+# 针对 Leaves/Paper 1.21.x。所有距离单位为格，时间单位为 tick（20/s）。
+
+enabled: true
+
+# ---------------------------------------------------------------------------
+# 1) 实体 AI 休眠（最大收益：远离玩家的生物不再跑寻路/随机游走）
+# ---------------------------------------------------------------------------
+dormancy:
+  enabled: true
+  # 扫描周期（tick）。建议 20–60。
+  scan-interval-ticks: 40
+  # 与最近玩家距离超过该值 → 休眠 AI；小于等于 → 唤醒
+  dormant-distance: 48
+  # 唤醒缓冲：距离小于 dormant-distance - wake-margin 才唤醒，避免边界抖动
+  wake-margin: 8
+  # 休眠时是否同时 setAI(false)（更省，但部分插件依赖 AI 状态时可关）
+  disable-ai-flag: true
+  # 每次扫描最多处理的实体数（防止单次扫描卡主线程）
+  max-entities-per-scan: 400
+  # 跳过这些实体类型（不休眠）
+  skip-types:
+    - PLAYER
+    - ARMOR_STAND
+    - ITEM
+    - EXPERIENCE_ORB
+    - PAINTING
+    - ITEM_FRAME
+    - GLOW_ITEM_FRAME
+    - MARKER
+    - INTERACTION
+    - TEXT_DISPLAY
+    - ITEM_DISPLAY
+    - BLOCK_DISPLAY
+    - FISHING_HOOK
+    - LIGHTNING_BOLT
+    - ENDER_DRAGON
+    - WITHER
+    # 载具/乘客不休眠，避免卡住移动
+  never-dormant-if-passenger: true
+  never-dormant-if-driving: true
+
+# ---------------------------------------------------------------------------
+# 2) 异步区块预热（把区块 IO/生成从主线程尖峰挪到异步线程）
+# ---------------------------------------------------------------------------
+preload:
+  enabled: true
+  # 预热周期（tick）
+  interval-ticks: 100
+  # 每个玩家预热半径（chunk 距离）。1=3x3，2=5x5
+  radius-chunks: 1
+  # 每次最多发起的异步加载数
+  max-loads-per-cycle: 24
+  # 只预热玩家附近未加载区块（不强制 gen 不存在的区块时可 false）
+  generate-if-missing: false
+  # 异步回调切回主线程的节流
+  callback-batch-per-tick: 8
+
+# ---------------------------------------------------------------------------
+# 3) Tick / MSPT 诊断
+# ---------------------------------------------------------------------------
+monitor:
+  enabled: true
+  # 控制台播报周期（tick），0=关闭周期播报
+  report-interval-ticks: 1200
+  # MSPT 超过该值记为 overloaded
+  overloaded-mspt: 50.0
+  # 历史窗口长度
+  history-size: 120
+
+# ---------------------------------------------------------------------------
+# 4) 主线程工作预算（超预算时更积极地推迟非关键扫描）
+# ---------------------------------------------------------------------------
+budget:
+  enabled: true
+  # 单次 dormancy 扫描允许占用的主线程时间（ms）
+  max-scan-ms: 2.5
+  # 单次 preload 发起允许占用的主线程时间（ms）
+  max-preload-kick-ms: 1.5
+  # MSPT 连续超过 overloaded 的次数 → 进入 aggressive 模式
+  aggressive-after-overloaded-ticks: 5
+  # aggressive 模式下 dormancy 扫描间隔加倍、preload 半径减半
+  aggressive-dormancy-interval-multiplier: 2
+  aggressive-preload-radius-min: 0
+
+# ---------------------------------------------------------------------------
+# 5) 杂项
+# ---------------------------------------------------------------------------
+misc:
+  # 启动时打印一次优化摘要
+  log-summary-on-enable: true
+  # 是否在状态命令中输出实体休眠统计
+  track-dormancy-stats: true

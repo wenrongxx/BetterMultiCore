@@ -1,0 +1,17 @@
+name: BetterSingleCore
+version: 1.0.0
+main: com.bettersinglecore.BetterSingleCorePlugin
+api-version: '1.21'
+description: Reduce Minecraft main-thread (single-core) load via AI dormancy, async chunk warmup and tick diagnostics.
+author: BetterSingleCore
+website: https://github.com/local/better-single-core
+commands:
+  bsc:
+    description: BetterSingleCore diagnostics and control
+    usage: /bsc <status|reload|enable|disable|dormancy|preload>
+    permission: bettersinglecore.admin
+    aliases: [singlecore, sc]
+permissions:
+  bettersinglecore.admin:
+    description: Admin access to BetterSingleCore
+    default: op

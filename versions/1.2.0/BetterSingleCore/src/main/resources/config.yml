@@ -1,0 +1,81 @@
+# BetterSingleCore 1.2.x — 多核并行 + 命令风暴自适应（不休眠 AI）
+# 面向高频 mcfunction（如 GravestoneDungeons：每 tick 大量 execute/@e 扫描/粒子）。
+# 命令只能在主线程跑；插件负责：空闲时用其他核预热区块，命令重负载时让出主线程。
+
+enabled: true
+
+# ---------------------------------------------------------------------------
+# 多核工作池
+# ---------------------------------------------------------------------------
+multicore:
+  enabled: true
+  worker-threads: 0          # 0 = availableProcessors()
+  max-concurrent-loads: 0    # 0 = workers * 8
+  thread-name-prefix: BSC-Worker
+
+# ---------------------------------------------------------------------------
+# 并行区块预热（其他核心做 IO/生成，主线程只 kick）
+# ---------------------------------------------------------------------------
+preload:
+  enabled: true
+  interval-ticks: 20
+  radius-chunks: 3           # 地牢/结构探索更吃预热
+  max-loads-per-player: 64
+  generate-if-missing: false
+  use-batch-rect: true
+  # 命令空闲时加倍半径（自适应开启时生效）
+  idle-radius-bonus: 1
+
+# ---------------------------------------------------------------------------
+# 路径邻域预热（不改 AI）
+# ---------------------------------------------------------------------------
+pathwarm:
+  enabled: true
+  interval-ticks: 40
+  player-distance: 48
+  chunk-radius: 1
+  max-mobs-per-cycle: 48
+  skip-types:
+    - PLAYER
+    - ARMOR_STAND
+    - ITEM
+    - EXPERIENCE_ORB
+    - PAINTING
+    - TEXT_DISPLAY
+    - ITEM_DISPLAY
+    - BLOCK_DISPLAY
+    - MARKER
+    - INTERACTION
+
+# ---------------------------------------------------------------------------
+# 命令风暴自适应：MSPT 高时暂停/降频本插件主线程工作，把 tick 让给 mcfunction
+# ---------------------------------------------------------------------------
+adaptive:
+  enabled: true
+  # 进入“让路”模式的 MSPT 阈值
+  yield-mspt: 25.0
+  # 连续多少 tick 超过阈值才让路（避免抖动）
+  yield-after-ticks: 8
+  # 恢复满速的 MSPT（需低于 yield 的一半左右）
+  resume-mspt: 12.0
+  # 连续多少 tick 低于恢复阈值才满速
+  resume-after-ticks: 40
+  # 让路时：pathwarm 完全暂停；preload 周期 × pause-interval-multiplier
+  pause-pathwarm: true
+  pause-interval-multiplier: 4
+  # 让路时 preload 是否仍 kick 少量（false=完全暂停 preload 主线程 kick）
+  preload-while-yielding: false
+
+# ---------------------------------------------------------------------------
+# MSPT / 命令负载诊断
+# ---------------------------------------------------------------------------
+monitor:
+  enabled: true
+  report-interval-ticks: 1200
+  overloaded-mspt: 50.0
+  history-size: 180
+  # 周期性打印“本插件主线程占用估计”（kick 耗时）
+  report-plugin-cost: true
+
+misc:
+  log-summary-on-enable: true
