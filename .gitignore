@@ -6,6 +6,13 @@ _jar_inspect/
 bench_results/
 HotReloadHelper/
 
+# --- Local test / bench harnesses (not for GitHub) ---
+test_*.ps1
+bench_*.ps1
+minimal_client.js
+verbose_client.js
+*_test.txt
+
 # --- Large binaries / third-party ---
 *.zip
 leaves-*.jar
