@@ -1,0 +1,82 @@
+# BetterMultiCore 1.0.x — 多核分摊 + particle 扇出 + 更轻 pathwarm 扫描（不改原版语义、不休眠 AI）
+# 高 MSPT 时缩小主线程批量并拉长 pathwarm 扫描间隔（绝不永久暂停）。
+# /particle 多观众发送并行到 worker；execute 世界逻辑仍在主线程。
+
+enabled: true
+
+multicore:
+  enabled: true
+  worker-threads: 0          # 0 = availableProcessors()
+  max-concurrent-loads: 0    # 0 = workers * 8
+  thread-name-prefix: BMC-Worker
+
+# ---------------------------------------------------------------------------
+# /particle 扇出并行：替换 Brigadier 叶子命令，参数/成功语义与原版一致
+# ---------------------------------------------------------------------------
+particle-parallel:
+  enabled: true
+  # 观众数 ≥ 该值时用 parallel 扇出；否则顺序（避免小开销）
+  parallel-viewers-threshold: 4
+
+preload:
+  enabled: true
+  interval-ticks: 20
+  radius-chunks: 3
+  max-loads-per-player: 64
+  generate-if-missing: false
+  use-batch-rect: true
+  # 低负载时额外半径（多核空闲时多暖区块）；高负载时自动不用
+  idle-radius-bonus: 2
+
+pathwarm:
+  enabled: true
+  interval-ticks: 40
+  player-distance: 48
+  # 发现生物的 AABB 半径（比 player-distance 小，降低 EntityLookup 扫描成本）
+  # 正式服实体多（spark 常见 1000+）时建议 24–32
+  scan-distance: 32
+  chunk-radius: 1
+  max-mobs-per-cycle: 48
+  skip-types:
+    - PLAYER
+    - ARMOR_STAND
+    - ITEM
+    - EXPERIENCE_ORB
+    - PAINTING
+    - TEXT_DISPLAY
+    - ITEM_DISPLAY
+    - BLOCK_DISPLAY
+    - MARKER
+    - INTERACTION
+
+# ---------------------------------------------------------------------------
+# 负载自适应：绝不暂停模块；只缩小主线程单次预算 / 拉长扫描间隔
+# ---------------------------------------------------------------------------
+adaptive:
+  enabled: true
+  # 进入“高负载分摊”模式的 MSPT
+  high-load-mspt: 25.0
+  high-load-after-ticks: 8
+  # 回到正常模式的 MSPT
+  normal-mspt: 12.0
+  normal-after-ticks: 40
+  # 正常：主线程每 tick 最多 drain 的 kick 数
+  normal-main-drain: 48
+  # 高负载：主线程每 tick 最多 drain（更小 → 更多少留给后续 tick / 更轻）
+  high-load-main-drain: 10
+  # 高负载：pathwarm 每轮最多处理生物数（>0，绝不为 0=暂停）
+  high-load-pathwarm-mobs: 16
+  # 高负载时 preload 是否仍用 idle-radius-bonus（false=用基础半径）
+  high-load-use-idle-radius: false
+  # 高负载时 pathwarm 实体扫描间隔倍数（每 N 个调度周期扫一次；>=1，绝不为 0=停扫）
+  high-load-pathwarm-interval-multiplier: 2
+
+monitor:
+  enabled: true
+  report-interval-ticks: 1200
+  overloaded-mspt: 50.0
+  history-size: 180
+  report-plugin-cost: true
+
+misc:
+  log-summary-on-enable: true
