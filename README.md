@@ -9,19 +9,54 @@ Minecraft **Leaves / Paper 1.21.x** 插件：在**不修改原版语义、不关
 
 > **不做的事**：不 `setAware`/`setAI` 休眠生物；不把 `execute` 世界状态逻辑挪出主线程（会破坏原版一致性）。
 
-## 版本
+## 下载
 
-| 版本 | 说明 |
-|------|------|
-| 1.0.0 | AI 休眠（**会破坏刷怪塔，勿用**） |
-| 1.1.0 | 多核区块预热（无 AI 休眠） |
-| 1.2.0 | 高 MSPT 让路（会暂停模块，**已弃用**） |
-| 1.3.0 | spread：永不暂停，只缩预算 |
-| 1.4.0 | + particle 多观众并行扇出 |
-| 1.5.0 | + PlugMan 热加载/热卸载（还原 Brigadier 补丁） |
-| **1.6.0** | 更轻 pathwarm 扫描、高负载隔轮扫、空闲加大预热半径 |
+各版本 jar 见 [Releases](https://github.com/wenrongxx/BetterSingleCore/releases)。  
+源码归档见 [`versions/`](versions/)。
 
-完整源码与 jar 见仓库 [`versions/`](versions/)；每轮说明见根目录 `ROUND*_SUMMARY.md`。
+## 版本历史
+
+### 1.6.0（当前）
+
+- 按生产环境 spark 画像继续压主线程：pathwarm 发现半径 `scan-distance`（默认 32），去掉空结果时的第二次大范围实体查询  
+- 高负载时 pathwarm **隔轮**扫描（`high-load-pathwarm-interval-multiplier`，默认 2）；drain 仍每 tick，**不暂停**  
+- 空闲时 `preload.idle-radius-bonus` 默认 2，多核多暖一圈区块  
+- `Players.all` 仅在 online+bots 为空时才扫全部 world  
+- 仍含 1.5 的 PlugMan 热卸载  
+
+### 1.5.0
+
+- particle Brigadier 补丁：安装前备份原版 `Command`，`uninstall()` 还原  
+- `onDisable` 必卸 particle 补丁 → PlugMan `unload`/`load`/`reload` 安全  
+- `/bsc reload` 按新配置重建 offload；status 增加 `originals=`  
+- 实测：PlugManX 3 轮 unload+load，`restored 7 vanilla`，无 ClassNotFound  
+
+### 1.4.0
+
+- 反射替换 `/particle` 叶子命令：观众 ≥ 阈值时并行扇出发送（Netty 线程安全）  
+- 参数、viewers、force、成功/失败文案与原版一致；`execute` 仍主线程  
+- 真实协议客户端 4 人实测：`parallelBatches` 生效  
+
+### 1.3.0
+
+- 弃用 1.2「暂停模块」；改为 **spread**：高 MSPT 只缩主线程预算  
+- pathwarm/preload **永不归零暂停**；worker 池持续运行  
+
+### 1.2.0
+
+- 针对高频命令数据包：adaptive yield（高 MSPT 暂停 pathwarm/preload）  
+- **已弃用**：暂停会影响功能，后由 1.3 取代  
+
+### 1.1.0
+
+- **移除 AI 休眠**（1.0 会破坏刷怪塔）  
+- 多核区块预热：worker 池异步规划/加载，主线程只 kick  
+- 修复 Leaves 假人不在 `getOnlinePlayers()` 等问题  
+
+### 1.0.0
+
+- 首版：AI 休眠 + 区块预热 + MSPT 监控  
+- **勿用于生产刷怪场景**（`setAware`/`setAI` 破坏农场）  
 
 ## 构建
 
@@ -81,12 +116,12 @@ plugman reload BetterSingleCore
 
 - **实体选择器 / `execute as @e` 等世界逻辑必须留在主线程**；本插件无法在不改原版语义的前提下把它们拆到其他核。  
 - 收益主要在：**区块 IO 并行、particle 发送扇出、减少插件自身主线程占用**。  
-- 若 spark 显示大量 `@e` 扫描，需从**数据包 / 命令写法**优化（tag、limit、合并入口），不是关 AI。  
+- 若 spark 显示大量 `@e` 扫描，需从**命令/资源写法**优化（tag、limit、合并入口），不是关 AI。  
 
 ## 回滚
 
-各版本 jar 与源码均在 `versions/<semver>/`，直接换回对应 jar 即可。
+在 [Releases](https://github.com/wenrongxx/BetterSingleCore/releases) 或 `versions/<semver>/` 换回对应 jar 即可。
 
 ## 许可
 
-按仓库所有者声明使用；第三方服务端与数据包版权归其各自作者。
+[MIT](LICENSE)
