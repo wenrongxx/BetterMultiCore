@@ -1,6 +1,7 @@
-# BetterMultiCore 1.0.x — 多核分摊 + particle 扇出 + 更轻 pathwarm 扫描（不改原版语义、不休眠 AI）
-# 高 MSPT 时缩小主线程批量并拉长 pathwarm 扫描间隔（绝不永久暂停）。
-# /particle 多观众发送并行到 worker；execute 世界逻辑仍在主线程。
+# BetterMultiCore 1.1.x — 多核分摊 + particle 扇出 + 空闲经济（不改原版语义、不休眠 AI）
+# 高 MSPT：缩小主线程批量（绝不永久暂停）。
+# 低 MSPT 且上轮无事可做：拉长 preload/pathwarm 调度（drain 仍每 tick）。
+# /particle 仅在 viewers*count 足够大时并行；execute 世界逻辑仍在主线程。
 
 enabled: true
 
@@ -17,6 +18,8 @@ particle-parallel:
   enabled: true
   # 观众数 ≥ 该值时用 parallel 扇出；否则顺序（避免小开销）
   parallel-viewers-threshold: 4
+  # viewers * count 低于此值不并行（小粒子顺序更便宜）
+  parallel-min-work: 64
 
 preload:
   enabled: true
@@ -50,7 +53,7 @@ pathwarm:
     - INTERACTION
 
 # ---------------------------------------------------------------------------
-# 负载自适应：绝不暂停模块；只缩小主线程单次预算 / 拉长扫描间隔
+# 负载自适应：高负载缩预算不暂停；低负载空闲拉长调度
 # ---------------------------------------------------------------------------
 adaptive:
   enabled: true
@@ -70,6 +73,9 @@ adaptive:
   high-load-use-idle-radius: false
   # 高负载时 pathwarm 实体扫描间隔倍数（每 N 个调度周期扫一次；>=1，绝不为 0=停扫）
   high-load-pathwarm-interval-multiplier: 2
+  # 空闲经济：MSPT < idle-mspt 且上轮无实质工作 → 每 N 轮才实扫 1 次（drain 仍每 tick）
+  idle-mspt: 6.0
+  idle-stretch-multiplier: 4
 
 monitor:
   enabled: true

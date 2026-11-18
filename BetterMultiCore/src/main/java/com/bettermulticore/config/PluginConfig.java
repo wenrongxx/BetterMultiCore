@@ -18,6 +18,8 @@ public final class PluginConfig {
 
     public final boolean particleParallelEnabled;
     public final int particleParallelViewersThreshold;
+    /** viewers * count must reach this before fan-out (avoids ForkJoin overhead on tiny sends). */
+    public final int particleParallelMinWork;
 
     public final boolean preloadEnabled;
     public final int preloadIntervalTicks;
@@ -47,6 +49,9 @@ public final class PluginConfig {
     public final boolean highLoadUseIdleRadius;
     /** When high-load, run pathwarm entity scan every Nth scheduled cycle (>=1). Still never hard-pauses modules. */
     public final int highLoadPathwarmIntervalMult;
+    /** Below this MSPT and with no pending work, stretch preload/pathwarm cadence (never to zero). */
+    public final double idleMspt;
+    public final int idleStretchMultiplier;
 
     public final boolean monitorEnabled;
     public final int reportIntervalTicks;
@@ -67,6 +72,8 @@ public final class PluginConfig {
         this.particleParallelEnabled = c.getBoolean("particle-parallel.enabled", true);
         this.particleParallelViewersThreshold = Math.max(2,
                 c.getInt("particle-parallel.parallel-viewers-threshold", 4));
+        this.particleParallelMinWork = Math.max(1,
+                c.getInt("particle-parallel.parallel-min-work", 64));
 
         this.preloadEnabled = c.getBoolean("preload.enabled", true);
         this.preloadIntervalTicks = Math.max(5, c.getInt("preload.interval-ticks", 20));
@@ -104,6 +111,8 @@ public final class PluginConfig {
         this.highLoadUseIdleRadius = c.getBoolean("adaptive.high-load-use-idle-radius", false);
         this.highLoadPathwarmIntervalMult = Math.max(1,
                 c.getInt("adaptive.high-load-pathwarm-interval-multiplier", 2));
+        this.idleMspt = Math.max(1.0, c.getDouble("adaptive.idle-mspt", 6.0));
+        this.idleStretchMultiplier = Math.max(1, c.getInt("adaptive.idle-stretch-multiplier", 4));
 
         this.monitorEnabled = c.getBoolean("monitor.enabled", true);
         this.reportIntervalTicks = Math.max(0, c.getInt("monitor.report-interval-ticks", 1200));
@@ -137,7 +146,8 @@ public final class PluginConfig {
                 + ", workers=" + effectiveWorkerThreads()
                 + ", preload=" + preloadEnabled + "@r" + preloadRadiusChunks
                 + ", pathwarm=" + pathwarmEnabled
-                + ", adaptive=" + adaptiveEnabled + "(spread>" + (int) highLoadMspt + "ms)"
+                + ", adaptive=" + adaptiveEnabled + "(spread>" + (int) highLoadMspt
+                + "ms,idle<" + (int) idleMspt + "ms x" + idleStretchMultiplier + ")"
                 + ", particlePar=" + particleParallelEnabled
                 + ", monitor=" + monitorEnabled;
     }

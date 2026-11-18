@@ -18,7 +18,16 @@ Minecraft **Leaves / Paper 1.21.x** 插件：在**不修改原版语义、不关
 
 ## 版本历史（BetterMultiCore）
 
-### 1.0.0（当前 · 新名首发）
+### 1.1.0（当前）
+
+工程文档见 [`BetterMultiCore/docs/v1.1/`](BetterMultiCore/docs/v1.1/)。
+
+- **空闲经济**：`MSPT < idle-mspt` 且上轮无实质工作时，preload/pathwarm 每 N 轮实扫 1 次（`drain` 仍每 tick，**高负载不暂停**）
+- **pathwarm 早退**：空闲时 `lastCycle` 可到 ~0.004ms，减少无效 `getNearbyEntities`
+- **particle min-work**：`viewers * count < parallel-min-work`（默认 64）走顺序，避免小并行开销
+- 实测：轻载 pluginKick 约降一半；高频 particle `parallelBatches=2228/2228`
+
+### 1.0.0
 
 功能继承原 BetterSingleCore 1.6.x，完成品牌与包名迁移：
 
@@ -40,8 +49,8 @@ Minecraft **Leaves / Paper 1.21.x** 插件：在**不修改原版语义、不关
 
 ```powershell
 # 需要 leaves-api / 服务端 jar 与 brigadier 在约定路径（见 build.ps1）
-powershell -File BetterMultiCore\build.ps1 -Version 1.0.0
-# 输出: BetterMultiCore\dist\BetterMultiCore-1.0.0.jar
+powershell -File BetterMultiCore\build.ps1 -Version 1.1.0
+# 输出: BetterMultiCore\dist\BetterMultiCore-1.1.0.jar
 ```
 
 ## 部署
@@ -58,6 +67,7 @@ powershell -File BetterMultiCore\build.ps1 -Version 1.0.0
 particle-parallel:
   enabled: true
   parallel-viewers-threshold: 4   # 观众 ≥ N 才并行发送
+  parallel-min-work: 64           # viewers*count 低于此值不并行
 
 pathwarm:
   scan-distance: 32               # 发现生物的 AABB 半径（实体多时可 24）
@@ -70,6 +80,8 @@ adaptive:
   high-load-mspt: 25.0
   high-load-pathwarm-mobs: 16     # 高负载时每轮扫描上限（>0，不暂停）
   high-load-pathwarm-interval-multiplier: 2
+  idle-mspt: 6.0                  # 空闲判定阈值
+  idle-stretch-multiplier: 4      # 空闲时每 N 轮实扫 1 次
 ```
 
 ### 常用命令
@@ -92,13 +104,15 @@ plugman load BetterMultiCore
 plugman reload BetterMultiCore
 ```
 
-## 性能对照（充分预热后重测）
+## 性能对照（充分预热后）
 
-**方法**：`Done` 后再等 **45s**；4 名真人客户端进服后再等 **30s**；然后 spark profiler **30s**。  
-条件：Leaves 1.21.x、flat、view/sim=4、固定 `bsc_stress` 负载、约 28–38 实体。指标为 spark MSPT/TPS（非插件自报）。
+**方法**：`Done` 后 **45s**；4 名真人进服后再 **30s**；spark profiler **30s**。  
+条件：Leaves 1.21.x、flat、view/sim=4、固定负载。指标为 spark MSPT。
 
-### MSPT（ms，30s 稳态窗口）
-测试环境：全新Leaves 1.21.11，数据包：GravestoneDungeons
+### 四组稳态（1.0 时代 · 同方法）
+
+测试环境：全新 Leaves 1.21.11，数据包：GravestoneDungeons  
+
 | 场景 | 中位数 | p95 | **mean** | max(1m) | TPS 1m |
 |------|--------|-----|----------|---------|--------|
 | 原版 | 1.32 | 1.86 | **1.38** | 9.15 | 20.00 |
@@ -106,13 +120,23 @@ plugman reload BetterMultiCore
 | 仅数据包 | 1.93 | 2.80 | **2.06** | 9.11 | 20.00 |
 | BetterMultiCore + 数据包 | 1.96 | 2.83 | **2.07** | 6.41 | 20.00 |
 
+### 1.1.0 稳态（S0）
+
+| 场景 | mean | median | p95 | max(1m) | TPS |
+|------|------|--------|-----|---------|-----|
+| 无插件（干净） | 2.92 | 1.73 | 10.47 | 76.54 | 19.98 |
+| **1.1.0 插件** | **1.42** | 1.36 | **1.84** | **4.79** | 20.00 |
+
+- 1.1.0 相对 1.0.0：pluginKick 约 **0.8→0.2–0.5ms/窗口**，pathwarm 空闲 `lastCycle≈0.004ms`（`idleSkips` 生效）
+- S1 高频 particle：`parallelBatches=2228/2228`，mean MSPT **1.92**，TPS 20
+
 ### 结论（诚实）
 
-1. **充分预热后**，在本测试的轻负载下，开/不开插件的 mean 差异约 **0.06ms（噪声级）**，不能声称「降 1/3」。  
-2. 附加数据包在本场景约 **+0.7ms mean**（2.06 vs 1.38），仍远离 50ms 上限。  
-3. 四组 TPS 均为 **20**；主线程约 93–97% 时间在 park——负载偏轻，不是压力测试。  
-4. 早期 README 中的 −33%/−39% 把**启动/进服尖峰**算进了 max/mean，**不成立**，已作废。  
-5. 真正有意义的收益场景仍是：**探索加载、高实体、高频多观众 particle、高 MSPT 生产服**；轻载 flat 对照测不出大幅下降。  
+1. **充分预热后**，轻负载下开/不开插件的 mean 差异往往在**噪声级**，不能声称「降 1/3」。  
+2. 数据包在本场景约 **+0.7ms mean**（2.06 vs 1.38），仍远离 50ms 上限。  
+3. TPS 均为 **20**；主线程大量 park——负载偏轻，不是压力测试。  
+4. 早期 −33%/−39% 把**启动/进服尖峰**算进了 max/mean，**不成立**，已作废。  
+5. 1.1 的价值是 **空闲更便宜、粒子并行更聪明**；收益场景：**探索加载、高实体、高频多观众 particle、高 MSPT 生产服**。  
 6. 主线程被选择器/`execute` 打满时，纯插件仍无法把世界逻辑挪走。
 
 ### 边界

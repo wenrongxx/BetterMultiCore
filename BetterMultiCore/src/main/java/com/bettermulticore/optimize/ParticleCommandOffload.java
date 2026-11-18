@@ -68,6 +68,7 @@ public final class ParticleCommandOffload {
     private final Logger log;
     private final boolean enabled;
     private final int parallelThreshold;
+    private final int parallelMinWork;
     private volatile boolean installed;
 
     /** Vanilla (or last-known-good) commands saved before we patch each node. */
@@ -78,11 +79,12 @@ public final class ParticleCommandOffload {
     private final AtomicLong invocations = new AtomicLong();
     private final AtomicInteger parallelSends = new AtomicInteger();
 
-    public ParticleCommandOffload(Plugin plugin, Logger log, boolean enabled, int parallelThreshold) {
+    public ParticleCommandOffload(Plugin plugin, Logger log, boolean enabled, int parallelThreshold, int parallelMinWork) {
         this.plugin = plugin;
         this.log = log;
         this.enabled = enabled;
         this.parallelThreshold = Math.max(2, parallelThreshold);
+        this.parallelMinWork = Math.max(1, parallelMinWork);
     }
 
     public void installDelayed() {
@@ -228,7 +230,8 @@ public final class ParticleCommandOffload {
         ServerLevel level = source.getLevel();
         int sent;
 
-        if (targets.length < parallelThreshold) {
+        int work = targets.length * Math.max(count, 1);
+        if (targets.length < parallelThreshold || work < parallelMinWork) {
             sent = sendSequential(level, particle, pos, delta, speed, count, force, targets);
         } else {
             sent = sendFanout(level, particle, pos, delta, speed, count, force, targets);
@@ -280,9 +283,9 @@ public final class ParticleCommandOffload {
             saved = originals.size();
         }
         return String.format(Locale.ROOT,
-                "installed=%s leaves=%d originals=%d invocations=%d parallelBatches=%d threshold=%d",
+                "installed=%s leaves=%d originals=%d invocations=%d parallelBatches=%d threshold=%d minWork=%d",
                 installed, patchedNodes.get(), saved, invocations.get(), parallelSends.get(),
-                parallelThreshold);
+                parallelThreshold, parallelMinWork);
     }
 
     public boolean isInstalled() {

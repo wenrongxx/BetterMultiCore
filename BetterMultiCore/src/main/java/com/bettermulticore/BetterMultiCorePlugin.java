@@ -46,7 +46,8 @@ public final class BetterMultiCorePlugin extends JavaPlugin {
         particleOffload = new ParticleCommandOffload(
                 this, log,
                 config.enabled && config.particleParallelEnabled,
-                config.particleParallelViewersThreshold);
+                config.particleParallelViewersThreshold,
+                config.particleParallelMinWork);
 
         getServer().getPluginManager().registerEvents(monitor, this);
 
@@ -61,7 +62,7 @@ public final class BetterMultiCorePlugin extends JavaPlugin {
         particleOffload.installDelayed();
 
         if (config.logSummaryOnEnable) {
-            log.info("[BMC] BetterMultiCore 1.0 enabled - " + getConfigSummary());
+            log.info("[BMC] BetterMultiCore 1.1 enabled - " + getConfigSummary());
             log.info("[BMC] CPUs=" + Runtime.getRuntime().availableProcessors()
                     + " workers=" + config.effectiveWorkerThreads()
                     + " particleParallel=" + config.particleParallelEnabled
@@ -113,7 +114,8 @@ public final class BetterMultiCorePlugin extends JavaPlugin {
         particleOffload = new ParticleCommandOffload(
                 this, getLogger(),
                 particleWanted,
-                config.particleParallelViewersThreshold);
+                config.particleParallelViewersThreshold,
+                config.particleParallelMinWork);
         if (particleWanted) {
             particleOffload.installDelayed();
         }
@@ -131,7 +133,7 @@ public final class BetterMultiCorePlugin extends JavaPlugin {
 
     public String buildStatus() {
         StringBuilder sb = new StringBuilder();
-        sb.append("§6=== BetterMultiCore 1.0 (spread + particle + light pathwarm) ===\n");
+        sb.append("§6=== BetterMultiCore 1.1 (idle economy + particle min-work) ===\n");
         sb.append("§7Enabled: §f").append(userEnabled && config.enabled)
                 .append(" §7| HighLoad: §f").append(monitor.isHighLoad()).append('\n');
         sb.append("§7CPUs: §f").append(Runtime.getRuntime().availableProcessors())

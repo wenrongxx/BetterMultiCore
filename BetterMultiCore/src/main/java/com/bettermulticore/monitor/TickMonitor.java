@@ -165,6 +165,18 @@ public final class TickMonitor implements Listener {
         return lastMspt;
     }
 
+    /** Idle = adaptive on, not high-load, and recent MSPT below idle-mspt. */
+    public boolean isIdle(double idleMspt) {
+        if (!config.adaptiveEnabled || highLoad) {
+            return false;
+        }
+        double mspt = lastMspt;
+        if (mspt <= 0) {
+            return false;
+        }
+        return mspt < idleMspt;
+    }
+
     public double getAvgMspt() {
         return avgMsptWindow;
     }

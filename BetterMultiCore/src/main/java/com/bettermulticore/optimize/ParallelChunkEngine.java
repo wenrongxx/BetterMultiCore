@@ -51,6 +51,8 @@ public final class ParallelChunkEngine {
     private final AtomicLong cycles = new AtomicLong();
     private final AtomicLong lastKickNanos = new AtomicLong();
     private final AtomicInteger lastLoadsThisCycle = new AtomicInteger();
+    private final AtomicLong idleSkips = new AtomicLong();
+    private volatile boolean idleStretchActive;
 
     private final Deque<Runnable> mainThreadKicks = new ArrayDeque<>();
 
@@ -160,7 +162,7 @@ public final class ParallelChunkEngine {
 
     private void beginCycle() {
         long t0 = System.nanoTime();
-        lastLoadsThisCycle.set(0);
+        int prevLoads = lastLoadsThisCycle.getAndSet(0);
         PluginConfig cfg = this.config;
         boolean highLoad = isHighLoad();
 
@@ -180,6 +182,22 @@ public final class ParallelChunkEngine {
         if (workers == null) {
             return;
         }
+
+        // Idle economy: low MSPT + last cycle kicked no loads → stretch planning.
+        int stretch = Math.max(1, cfg.idleStretchMultiplier);
+        TickMonitor mon = this.monitor;
+        if (!highLoad && stretch > 1 && cycles.get() > 0
+                && mon != null && mon.isIdle(cfg.idleMspt)
+                && prevLoads == 0
+                && (cycles.get() % stretch) != 0) {
+            idleStretchActive = true;
+            idleSkips.incrementAndGet();
+            drainMainKicks();
+            lastKickNanos.set(System.nanoTime() - t0);
+            cycles.incrementAndGet();
+            return;
+        }
+        idleStretchActive = false;
 
         int radius = cfg.preloadRadiusChunks;
         boolean useIdleBonus = !highLoad || cfg.highLoadUseIdleRadius;
@@ -201,7 +219,7 @@ public final class ParallelChunkEngine {
             ));
         }
 
-        // Planning always on workers — never skipped.
+        // Planning always on workers — never skipped when doing a real cycle.
         for (Plan plan : plans) {
             workers.execute(() -> planAndEnqueue(plan));
         }
@@ -360,12 +378,14 @@ public final class ParallelChunkEngine {
                 ? config.highLoadMainDrain
                 : config.normalMainDrain;
         return String.format(Locale.ROOT,
-                "workers=%d maxLoads=%d highLoad=%s drain=%d cycles=%d started=%d done=%d fail=%d inflight=%d batch=%d lastKick=%.3fms",
+                "workers=%d maxLoads=%d highLoad=%s drain=%d cycles=%d started=%d done=%d fail=%d inflight=%d batch=%d lastKick=%.3fms idleSkips=%d%s",
                 config.effectiveWorkerThreads(),
                 config.effectiveMaxConcurrentLoads(),
                 hl, drain, cycles.get(), loadsStarted.get(), loadsCompleted.get(), loadsFailed.get(),
                 inFlight.size(), batchCalls.get(),
-                lastKickNanos.get() / 1_000_000.0);
+                lastKickNanos.get() / 1_000_000.0,
+                idleSkips.get(),
+                idleStretchActive ? " idleStretch=ON" : "");
     }
 
     public long getLoadsStarted() {

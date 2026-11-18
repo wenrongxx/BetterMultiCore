@@ -51,6 +51,9 @@ public final class PathChunkWarmer {
     private final AtomicLong highLoadCycles = new AtomicLong();
     private final AtomicLong lastCycleNanos = new AtomicLong();
     private final AtomicInteger lastMobsThisCycle = new AtomicInteger();
+    private final AtomicInteger lastQueuedThisCycle = new AtomicInteger();
+    private final AtomicLong idleSkips = new AtomicLong();
+    private volatile boolean idleStretchActive;
 
     public PathChunkWarmer(Plugin plugin, Logger log, PluginConfig config) {
         this.plugin = plugin;
@@ -142,16 +145,17 @@ public final class PathChunkWarmer {
 
     private void cycle() {
         long t0 = System.nanoTime();
-        lastMobsThisCycle.set(0);
         PluginConfig cfg = this.config;
         boolean highLoad = isHighLoad();
         if (highLoad) {
             highLoadCycles.incrementAndGet();
         }
-
         if (workers == null) {
             ensurePool();
         }
+
+        int prevQueued = lastQueuedThisCycle.getAndSet(0);
+        lastMobsThisCycle.set(0);
 
         List<Player> players = Players.all(plugin);
         if (players.isEmpty()) {
@@ -160,11 +164,8 @@ public final class PathChunkWarmer {
             return;
         }
 
-        int budget = cfg.pathwarmMaxMobsPerCycle;
+        // High-load: stretch scan cadence (never to zero); drain still runs.
         if (highLoad) {
-            // Shrink budget, never zero — keep distributing across cores.
-            budget = Math.max(1, Math.min(budget, cfg.highLoadPathwarmMobs));
-            // Stretch scan cadence under load (still >0 every mult cycles; drain keeps running).
             int mult = Math.max(1, cfg.highLoadPathwarmIntervalMult);
             if (mult > 1 && (cycles.get() % mult) != 0) {
                 drainMain();
@@ -174,18 +175,38 @@ public final class PathChunkWarmer {
             }
         }
 
+        // Idle economy: low MSPT + last full scan queued nothing → skip most scans.
+        int stretch = Math.max(1, cfg.idleStretchMultiplier);
+        TickMonitor mon = this.monitor;
+        if (!highLoad && stretch > 1 && cycles.get() > 0
+                && mon != null && mon.isIdle(cfg.idleMspt)
+                && prevQueued == 0
+                && (cycles.get() % stretch) != 0) {
+            idleStretchActive = true;
+            idleSkips.incrementAndGet();
+            drainMain();
+            lastCycleNanos.set(System.nanoTime() - t0);
+            cycles.incrementAndGet();
+            return;
+        }
+        idleStretchActive = false;
+
+        int budget = cfg.pathwarmMaxMobsPerCycle;
+        if (highLoad) {
+            budget = Math.max(1, Math.min(budget, cfg.highLoadPathwarmMobs));
+        }
+
         double scanDist = cfg.pathwarmScanDistance;
         double playerDistSq = cfg.pathwarmPlayerDistance * cfg.pathwarmPlayerDistance;
         int processed = 0;
         List<MobJob> jobs = new ArrayList<>();
+        long queuedBefore = chunksQueued.get();
 
         for (Player player : players) {
             if (processed >= budget) {
                 break;
             }
             Location pl = player.getLocation();
-            // One smaller AABB — avoid second full-radius world query when empty
-            // (old path did getNearbyEntities(48) then world.getNearbyEntities(48) again).
             java.util.Collection<Entity> nearby;
             try {
                 nearby = player.getNearbyEntities(scanDist, scanDist, scanDist);
@@ -230,6 +251,7 @@ public final class PathChunkWarmer {
             }
         }
 
+        lastQueuedThisCycle.set((int) Math.min(Integer.MAX_VALUE, chunksQueued.get() - queuedBefore));
         drainMain();
         long cost = System.nanoTime() - t0;
         lastCycleNanos.set(cost);
@@ -324,11 +346,13 @@ public final class PathChunkWarmer {
         boolean hl = isHighLoad();
         PluginConfig cfg = this.config;
         return String.format(Locale.ROOT,
-                "cycles=%d highLoadCycles=%d mobs=%d lastMobs=%d queued=%d done=%d inflight=%d lastCycle=%.3fms scanR=%.0f%s",
+                "cycles=%d highLoadCycles=%d mobs=%d lastMobs=%d queued=%d done=%d inflight=%d lastCycle=%.3fms scanR=%.0f idleSkips=%d%s%s",
                 cycles.get(), highLoadCycles.get(), mobsScanned.get(), lastMobsThisCycle.get(),
                 chunksQueued.get(), chunksDone.get(), inFlight.size(),
                 lastCycleNanos.get() / 1_000_000.0,
                 cfg.pathwarmScanDistance,
-                hl ? " highLoadStretch=" + Math.max(1, cfg.highLoadPathwarmIntervalMult) : "");
+                idleSkips.get(),
+                hl ? " highLoadStretch=" + Math.max(1, cfg.highLoadPathwarmIntervalMult) : "",
+                idleStretchActive ? " idleStretch=ON" : "");
     }
 }
